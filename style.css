@@ -1,0 +1,92 @@
+/* style.css — 将ギ効率CPU 用スタイル
+   - レスポンシブ対応
+   - 盤面ハイライト、合法手、移動トレイル、特殊マーカー、反転表示
+*/
+
+:root{
+  --bg: #fafafa;
+  --panel-bg: #ffffff;
+  --accent: #2196f3;
+  --muted: #888;
+  --tile-light: #ffffff;
+  --tile-dark: #f3f3f3;
+  --board-border: #cfcfcf;
+  --danger: #e53935;
+  --ok: #2e7d32;
+}
+
+/* Reset */
+*{ box-sizing: border-box; }
+body{ margin:12px; font-family: system-ui, "Hiragino Kaku Gothic ProN", "メイリオ", "Noto Sans JP", sans-serif; background:var(--bg); color:#222; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+/* Layout */
+.container{ display:flex; gap:12px; align-items:flex-start; justify-content:center; }
+.boardWrap{ background:#eee; padding:8px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+table#board{ border-collapse:collapse; background:linear-gradient(#fff,#fafafa); border:1px solid var(--board-border); border-radius:6px; overflow:hidden; }
+#board td{ width:56px; height:56px; text-align:center; vertical-align:middle; border:1px solid rgba(0,0,0,0.06); position:relative; font-size:16px; cursor:pointer; user-select:none; padding:0; }
+#board td.dark{ background:var(--tile-dark); }
+.piece{ font-weight:700; user-select:none; display:inline-block; transition:transform .12s ease, opacity .12s ease; padding:2px 0; width:100%; height:100%; line-height:56px; box-sizing:border-box; }
+.piece.p2{ transform: rotate(180deg); }
+
+/* Side panel */
+.sidePanel{ width:420px; padding:8px; border-radius:8px; background:var(--panel-bg); border:1px solid #e6e6e6; box-shadow:0 1px 3px rgba(0,0,0,0.03); }
+.playerRow{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #f0f0f0; font-size:14px; align-items:center; }
+.playerRow:last-child{ border-bottom:none; }
+
+.controls{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.controls > div, .controls > button{ display:flex; gap:8px; align-items:center; }
+
+.btnText{ padding:6px 8px; font-weight:600; }
+
+.no-rotate{ display:inline-block; }
+
+/* Reserve area */
+.reservesWrap{ display:flex; gap:8px; }
+.reserveArea{ padding:8px; background:#fff; border:1px dashed #ddd; min-height:64px; width:190px; border-radius:6px; }
+.reserveItem{ margin:6px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+
+/* Trails and markers */
+#board td.trail{ box-shadow: inset 0 0 0 4px rgba(0,150,136,0.12); border-radius:4px; }
+#board td.selected{ outline:3px solid rgba(33,150,243,0.18); border-radius:4px; }
+#board td.legalMove{
+  box-shadow: inset 0 0 0 4px rgba(76,175,80,0.10);
+  background-image: radial-gradient(circle at 50% 50%, rgba(76,175,80,0.08) 0%, rgba(76,175,80,0.02) 60%);
+  border-radius:4px;
+}
+
+.movedMarker{ position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; box-shadow: inset 0 0 0 3px rgba(0,150,136,0.14); border-radius:4px; }
+.specialMarker{ position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; box-shadow: inset 0 0 0 3px rgba(255,165,0,0.16); border-radius:4px; }
+
+/* Log */
+.log{ max-height:360px; overflow:auto; background:#fff; border:1px solid #e6e6e6; padding:8px; border-radius:6px; font-size:13px; }
+
+/* Modal */
+.modal{ position:fixed; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); z-index:2000; }
+.modalContent{ background:#fff; padding:16px; border-radius:8px; min-width:300px; box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.hidden{ display:none; }
+
+/* Buttons */
+button{ background:#fff; border:1px solid #d0d0d0; padding:6px 10px; border-radius:6px; cursor:pointer; }
+button:active{ transform:translateY(1px); }
+button[disabled]{ opacity:0.5; cursor:not-allowed; }
+
+/* Flip / orientation */
+.controls.controlsFlip{ flex-direction: column-reverse; }
+.controls.controlsFlip .btnText{ display:inline-block; transform: rotate(180deg); }
+.statusFlip { display: flex; flex-direction: column-reverse; }
+.statusFlip .playerRow { transform: rotate(180deg); }
+.flip { display:inline-block; transform: rotate(180deg); }
+
+/* Small screens */
+@media(max-width:920px){
+  .container{ flex-direction:column; align-items:center; }
+  .sidePanel{ width:min(96%,720px); }
+  #board td{ width:44px; height:44px; line-height:44px; font-size:14px; }
+  .reserveArea{ width:48%; }
+}
+
+/* Accessibility */
+#board td:focus { outline: 2px dashed var(--accent); outline-offset: -4px; }
+
+/* Helper classes for visual debugging */
+.debugBorder{ outline:1px dashed rgba(0,0,0,0.08); }

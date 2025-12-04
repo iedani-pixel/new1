@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>将ギ効率CPU — ルーレット将棋プロトタイプ</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 開始モーダル -->
+  <div id="startModal" class="modal">
+    <div class="modalContent">
+      <h2>将ギ効率CPU — モード選択</h2>
+      <div>
+        <label><input type="radio" name="mode" value="pvp" checked> 2人対戦（ローカル）</label><br>
+        <label><input type="radio" name="mode" value="cpu_p1"> 先手：CPU</label><br>
+        <label><input type="radio" name="mode" value="cpu_p2"> 後手：CPU</label><br>
+      </div>
+
+      <div style="margin-top:8px;">
+        CPUレベル:
+        <select id="cpuLevelSelect">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+          <option value="expert">Expert</option>
+          <option value="master" selected>Master</option>
+        </select>
+      </div>
+
+      <div style="margin-top:8px;">
+        Master探索総回数:
+        <input id="masterItersInput" type="number" min="100" step="100" value="8000" style="width:140px;">
+      </div>
+
+      <div style="margin-top:8px;">
+        Worker 数（並列）:
+        <input id="workerCountInput" type="number" min="1" max="12" value="4" style="width:80px;">
+      </div>
+
+      <div style="margin-top:8px;">
+        <label><input type="checkbox" id="autoFlipCheckbox" checked> ターンごとに操作ボタンを自動で上下反転する</label>
+      </div>
+
+      <hr>
+
+      <div style="margin-top:12px;">
+        <button id="startGameBtn">開始</button>
+      </div>
+
+      <p style="margin-top:8px; font-size:13px; color:#555;">
+        注意：Worker 数や探索数を増やすと CPU が強くなりますがブラウザ負荷が高くなります。まずは Worker=2〜4、探索=2000〜8000 を試してください。
+      </p>
+    </div>
+  </div>
+
+  <!-- メイン UI -->
+  <div class="container">
+    <!-- 将棋盤 -->
+    <div class="boardWrap">
+      <table id="board" aria-label="将棋盤"></table>
+    </div>
+
+    <!-- サイドパネル -->
+    <div class="sidePanel">
+      <div id="status">
+        <div class="playerRow">
+          <div>先手 (P1)</div>
+          <div>所持点: <span id="points0">10</span></div>
+          <div>保留: <span id="cap0">0</span></div>
+        </div>
+        <div class="playerRow">
+          <div>後手 (P2)</div>
+          <div>所持点: <span id="points1">10</span></div>
+          <div>保留: <span id="cap1">0</span></div>
+        </div>
+        <div style="margin-top:6px;">現在: <span id="turnLabel">—</span></div>
+        <div style="margin-top:4px;">所持点: <span id="currentPoints">—</span></div>
+      </div>
+
+      <div id="controlsCenter" class="controls">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="openBet"><span class="btnText">賭ける</span></button>
+          <button id="spinBtn" disabled><span class="btnText">ルーレット回す</span></button>
+        </div>
+
+        <div style="margin-top:6px;">
+          結果: <span id="rouletteResult" class="no-rotate">—</span>
+          <span style="margin-left:8px;">残り回数: <span id="spinRemain">2</span></span>
+        </div>
+
+        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="startPromoteSelect"><span class="btnText">成り/解除(13点)</span></button>
+          <button id="startDestroySelect"><span class="btnText">指定破壊(30点)</span></button>
+          <button id="startStealSelect"><span class="btnText">奪取(16点)</span></button>
+          <button id="twoStepBtn"><span class="btnText">二歩列(25点)</span></button>
+        </div>
+
+        <div style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+          <select id="twoStepCol">
+            <option value="">列選択</option>
+            <option value="0">A</option><option value="1">B</option><option value="2">C</option>
+            <option value="3">D</option><option value="4">E</option><option value="5">F</option>
+            <option value="6">G</option><option value="7">H</option><option value="8">I</option>
+          </select>
+
+          <button id="selfDestroyBtn"><span class="btnText">自己破壊(+13点)</span></button>
+
+        <div style="margin-top:6px; display:flex; gap:8px;">
+          <button id="drainBtn"><span class="btnText">相手-3（5点）</span></button>
+          <button id="instantWinBtn"><span class="btnText">即時勝利(110点)</span></button>
+        </div>
+          <button id="drainUntilZeroBtn"><span class="btnText">相手を0にするまでドレイン</span></button>
+        </div>
+
+        <div style="margin-top:6px; display:flex; gap:8px;">
+          <button id="confirmTargetBtn"><span class="btnText">選択を確定して実行</span></button>
+          <button id="cancelTargetBtn"><span class="btnText">キャンセル</span></button>
+        </div>
+
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <button id="endTurnBtn"><span class="btnText">パスしてターン終了</span></button>
+          <button id="abortMatchBtn"><span class="btnText">対局中断</span></button>
+        </div>
+
+        <div style="margin-top:8px;">
+          <div id="thinkingIndicator" style="display:none;">CPU（Master）が思考中…</div>
+        </div>
+      </div>
+
+      <div class="reservesWrap" style="display:flex; gap:8px; margin-top:12px;">
+        <div id="reserveAreaP1" class="reserveArea">
+          <h4>先手の保留駒</h4>
+        </div>
+        <div id="reserveAreaP2" class="reserveArea">
+          <h4>後手の保留駒</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ベットモーダル -->
+  <div id="betModal" class="modal hidden">
+    <div class="modalContent">
+      <h3>ルーレットに賭ける（1〜4）</h3>
+      <div id="betsCur"></div>
+      <div>所持: <span id="betPointsCur">0</span></div>
+      <div style="margin-top:8px;">
+        <button id="confirmBets">確定</button>
+        <button id="closeBets">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ログ -->
+  <div id="logWrap" style="margin-top:12px; padding:8px;">
+    <h4>ログ</h4>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
